@@ -10,6 +10,7 @@ from scipy.io.wavfile import read
 from pylab import plot, show, subplot, specgram
 # skip this line and remove cmap=binary from the code below if you want non-greyscale spectrograms
 from matplotlib.cm import binary
+from matplotlib import axis, pyplot
 
 
 # Define functions:
@@ -48,19 +49,15 @@ def waveform(data,rate):
 	plot(x,data,color='black',linewidth=0.2)
 
 # Basic spectrogram plotting function:
-def spectrogram1(data,rate,window_length=20):
+def spectrogram(data,rate,window_length=20):
 	nfft = int(float((window_length*rate))/1000)
 	specgram(data,NFFT=nfft,noverlap=0,cmap=binary)
 # wondering if we can use the non-plot part of the output of specgram to get dynamic range and such. I haven't looked at what type of object it's returning, but we might be able to assign it to something, then apply a threshold, then plot the results of that?
 
-# Producing a time-aligned transcription:
-def transcription(textgrid):
-
-
 # Function which combines previous ones to give Praat-style waveform+spectrogram+textgrid plot
 # plot waveform + spectrogram + transcription
 #time is given in sec units
-def spectrogram(sound, transcription, window_length = 20):
+def soundplot(sound, transcription, window_length = 20):
     # read in soundfile:
     a = wav(sound)
     # read in textgrid:
@@ -68,19 +65,18 @@ def spectrogram(sound, transcription, window_length = 20):
     # plot waveform
     subplot(3,1,1)
     waveform(a[1],a[2])
-    # translate window_length into a length in samples
-    nfft = int(float((window_length*a[2]))/1000)
     # plot spectrogram
     subplot(3,1,2)
-    spectrogram1(a[1],window_length)
+    spectrogram1(a[1], a[2], window_length)
     # add transcription:
     subplot(3,1,3)
-    axis([0,max(a[0]),0,2])
-    for word in intervals1:
-	    matplotlib.pyplot.axvspan(float(b[0][word][1]), float(b[0][word][2]), facecolor = 'b') # should this maybe be float(b[1]?
+    for word in b[0]:
+    	#plots the interval for each phone
+	    pyplot.axvspan(float(b[0][word][1]), float(b[0][word][2]), facecolor = 'b')
 	    # actually plot words:
-	    annotate(word, xy =((float(b[0][word][1])+float(b[0][word][2]))/2, .5), color= 'y')
-
+	    pyplot.annotate(b[0][word][0], xy =((float(b[0][word][1])+float(b[0][word][2]))/2, .5), color= 'y')
+    axis([0,max(a[0]),0,2])
+	
 # define class 'Sound' (check to make sure this isn't overwriting anything else)
 # definitely not the right syntax yet
 class Sound:
@@ -90,16 +86,18 @@ class Sound:
         for i, r in enumerate(self.x): self.x[i] = float(r)/self.rate
         self.intervals1, self.intervals2 = textgrid(transcription)
 
-    # make waveform plot
+    #make waveform plot
     def waveform(self):
         plot(self.x,self.data,color='black',linewidth=0.2)
     
     # make spectrogram plot
-    def self.spectrogram(self.data,window_length=20,noverlap=0,cmap=binary):
+    def spectrogram(self,window_length=20,noverlap=0,cmap=binary):
         nfft = int(float((window_length*self.rate))/1000)
         specgram(self.data,NFFT=nfft,noverlap=noverlap,cmap=binary)
+        
+
     # Make transcription plot
-    def self.transcription(args):
+#    def self.transcription(args):
 
 
 
