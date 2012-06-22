@@ -11,7 +11,7 @@ from pylab import plot, show, subplot, specgram
 # skip this line and remove cmap=binary from the code below if you want non-greyscale spectrograms
 from matplotlib.cm import binary
 from matplotlib import axis, pyplot, cm
-
+from __future__ import division
 
 # Define functions:
 
