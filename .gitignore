@@ -1,0 +1,8 @@
+
+*.pyc
+
+.DS_Store
+
+*.pyc
+
+pyphon/pyphon.pyc
