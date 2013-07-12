@@ -10,3 +10,7 @@ pyphon/pyphon.pyc
 *.txt
 
 pyphon.egg-info/PKG-INFO
+
+.project
+
+.pydevproject
