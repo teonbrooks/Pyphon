@@ -1,95 +1,347 @@
-#!/usr/bin/env python
-"""
-An example of how to use wx or wxagg in an application with the new
-toolbar - comment out the setA_toolbar line for no toolbar
-"""
+#----------------------------------------------------------------------
 
-# Used to guarantee to use at least Wx2.8
-import wxversion
-wxversion.ensureMinimal('2.8')
-
-from numpy import arange, sin, pi
-
-import matplotlib
-
-# uncomment the following to use wx rather than wxagg
-#matplotlib.use('WX')
-#from matplotlib.backends.backend_wx import FigureCanvasWx as FigureCanvas
-
-# comment out the following to use wx rather than wxagg
-matplotlib.use('WXAgg')
-from matplotlib.backends.backend_wxagg import FigureCanvasWxAgg as FigureCanvas
-
-from matplotlib.backends.backend_wx import NavigationToolbar2Wx
-
-from matplotlib.figure import Figure
-
-import wx
 import pyphon
+import matplotlib
+import  os
+import  wx
+from wx.lib.splitter import MultiSplitterWindow
+
+#----------------------------------------------------------------------
 
 
-class CanvasFrame(wx.Frame):
-
-    def __init__(self):
-        wx.Frame.__init__(self,None,-1,
-                         'CanvasFrame',size=(550,350))
-
-        self.SetBackgroundColour(wx.NamedColor("WHITE"))
-
-        self.figure = Figure()
-
-#These are the actual plotting functions        
-        self.axes = self.figure.add_subplot(111)
-        t = arange(0.0,3.0,0.01)
-        s = sin(2*pi*t)
-        self.axes.plot(t,s)
-#        
-        self.canvas = FigureCanvas(self, -1, self.figure)
-
-        self.sizer = wx.BoxSizer(wx.VERTICAL)
-        self.sizer.Add(self.canvas, 1, wx.LEFT | wx.TOP | wx.GROW)
-        self.SetSizer(self.sizer)
-        self.Fit()
-
-        self.add_toolbar()  # comment this out for no toolbar
 
 
-    def add_toolbar(self):
-        self.toolbar = NavigationToolbar2Wx(self.canvas)
-        self.toolbar.Realize()
-        if wx.Platform == '__WXMAC__':
-            # Mac platform (OSX 10.3, MacPython) does not seem to cope with
-            # having a toolbar in a sizer. This work-around gets the buttons
-            # back, but at the expense of having the toolbar at the top
-            self.SetToolBar(self.toolbar)
+
+
+#This brings up a file dialog to import files.
+#This happens at launch. If no files are selected, RaiseError 
+#---------------------------------------------------------------------------
+
+# This is how you pre-establish a file filter so that the dialog
+# only shows the extension(s) you want it to.
+wildcard = "Wavefile (*.wav)|"     \
+           "TextGrid (*.TextGrid)|" \
+           "All files (*.*)|*.*"
+
+#---------------------------------------------------------------------------
+
+class TestPanel(wx.Panel):
+    def __init__(self, parent, log):
+        self.log = log
+        wx.Panel.__init__(self, parent, -1)
+
+        b = wx.Button(self, -1, "Create and Show an OPEN FileDialog", (50,50))
+        self.Bind(wx.EVT_BUTTON, self.OnButton, b)
+
+        b = wx.Button(self, -1, "Create and Show a SAVE FileDialog", (50,90))
+        self.Bind(wx.EVT_BUTTON, self.OnButton2, b)
+
+
+    def OnButton(self, evt):
+        self.log.WriteText("CWD: %s\n" % os.getcwd())
+
+        # Create the dialog. In this case the current directory is forced as the starting
+        # directory for the dialog, and no default file name is forced. This can easilly
+        # be changed in your program. This is an 'open' dialog, and allows multitple
+        # file selections as well.
+        #
+        # Finally, if the directory is changed in the process of getting files, this
+        # dialog is set up to change the current working directory to the path chosen.
+        dlg = wx.FileDialog(
+            self, message="Choose a file",
+            defaultDir=os.getcwd(), 
+            defaultFile="",
+            wildcard=wildcard,
+            style=wx.OPEN | wx.MULTIPLE | wx.CHANGE_DIR
+            )
+
+        # Show the dialog and retrieve the user response. If it is the OK response, 
+        # process the data.
+        if dlg.ShowModal() == wx.ID_OK:
+            # This returns a Python list of files that were selected.
+            paths = dlg.GetPaths()
+
+            self.log.WriteText('You selected %d files:' % len(paths))
+
+            for path in paths:
+                self.log.WriteText('           %s\n' % path)
+
+        # Compare this with the debug above; did we change working dirs?
+        self.log.WriteText("CWD: %s\n" % os.getcwd())
+
+        # Destroy the dialog. Don't do this until you are done with it!
+        # BAD things can happen otherwise!
+        dlg.Destroy()
+
+
+
+    def OnButton2(self, evt):
+        self.log.WriteText("CWD: %s\n" % os.getcwd())
+
+        # Create the dialog. In this case the current directory is forced as the starting
+        # directory for the dialog, and no default file name is forced. This can easilly
+        # be changed in your program. This is an 'save' dialog.
+        #
+        # Unlike the 'open dialog' example found elsewhere, this example does NOT
+        # force the current working directory to change if the user chooses a different
+        # directory than the one initially set.
+        dlg = wx.FileDialog(
+            self, message="Save file as ...", defaultDir=os.getcwd(), 
+            defaultFile="", wildcard=wildcard, style=wx.SAVE
+            )
+
+        # This sets the default filter that the user will initially see. Otherwise,
+        # the first filter in the list will be used by default.
+        dlg.SetFilterIndex(2)
+
+        # Show the dialog and retrieve the user response. If it is the OK response, 
+        # process the data.
+        if dlg.ShowModal() == wx.ID_OK:
+            path = dlg.GetPath()
+            self.log.WriteText('You selected "%s"' % path)
+
+            # Normally, at this point you would save your data using the file and path
+            # data that the user provided to you, but since we didn't actually start
+            # with any data to work with, that would be difficult.
+            # 
+            # The code to do so would be similar to this, assuming 'data' contains
+            # the data you want to save:
+            #
+            # fp = file(path, 'w') # Create file anew
+            # fp.write(data)
+            # fp.close()
+            #
+            # You might want to add some error checking :-)
+            #
+
+        # Note that the current working dir didn't change. This is good since
+        # that's the way we set it up.
+        self.log.WriteText("CWD: %s\n" % os.getcwd())
+
+        # Destroy the dialog. Don't do this until you are done with it!
+        # BAD things can happen otherwise!
+        dlg.Destroy()
+
+        
+
+#---------------------------------------------------------------------------
+
+
+def runTest(frame, nb, log):
+    win = TestPanel(nb, log)
+    return win
+
+#---------------------------------------------------------------------------
+
+
+overview = """\
+This class provides the file selection dialog. It incorporates OS-native features
+depending on the OS in use, and can be used both for open and save operations. 
+The files displayed can be filtered by setting up a wildcard filter, multiple files
+can be selected (open only), and files can be forced in a read-only mode.
+
+There are two ways to get the results back from the dialog. GetFiles() returns only
+the file names themselves, in a Python list. GetPaths() returns the full path and 
+filenames combined as a Python list.
+
+"""
+
+
+if __name__ == '__main__':
+    import sys,os
+    import run
+    run.main(['', os.path.basename(sys.argv[0])] + sys.argv[1:])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#This is for the MultiSplitter Window. This comes from the wxpython demo and it has been modified to have a default horizontal orientation.
+#----------------------------------------------------------------------
+
+class SamplePane(wx.Panel):
+    """
+    Just a simple test window to put into the splitter.
+    """
+    def __init__(self, parent, colour, label):
+        wx.Panel.__init__(self, parent, style=wx.BORDER_SUNKEN)
+        self.SetBackgroundColour(colour)
+        wx.StaticText(self, -1, label, (5,5))
+
+    def SetOtherLabel(self, label):
+        wx.StaticText(self, -1, label, (5, 30))
+
+
+
+class ControlPane(wx.Panel):
+    def __init__(self, parent):
+        wx.Panel.__init__(self, parent)
+
+        hvBox = wx.RadioBox(self, -1, "Orientation",
+                            choices=["Horizontal", "Vertical"],
+                            style=wx.RA_SPECIFY_COLS,
+                            majorDimension=1)
+        hvBox.SetSelection(0)
+        self.Bind(wx.EVT_RADIOBOX, self.OnSetHV, hvBox)
+        
+        luCheck = wx.CheckBox(self, -1, "Live Update")
+        luCheck.SetValue(True)
+        self.Bind(wx.EVT_CHECKBOX, self.OnSetLiveUpdate, luCheck)
+
+        btn = wx.Button(self, -1, "Swap 2 && 4")
+        self.Bind(wx.EVT_BUTTON, self.OnSwapButton, btn)
+
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(hvBox)
+        sizer.Add(luCheck, 0, wx.TOP, 5)
+        sizer.Add(btn, 0, wx.TOP, 5)
+        border = wx.BoxSizer()
+        border.Add(sizer, 1, wx.EXPAND|wx.ALL, 5)
+        self.SetSizer(border)
+
+
+    def OnSetHV(self, evt):
+        rb = evt.GetEventObject()
+        self.GetParent().SetOrientation(rb.GetSelection())
+        
+
+    def OnSetLiveUpdate(self, evt):
+        check = evt.GetEventObject()
+        self.GetParent().SetLiveUpdate(check.GetValue())
+
+
+    def OnSwapButton(self, evt):
+        self.GetParent().Swap2and4()
+        
+
+
+class TestPanel(wx.Panel):
+    def __init__(self, parent, log):
+        self.log = log
+        wx.Panel.__init__(self, parent, -1)
+
+        cp = ControlPane(self)
+        
+        splitter = MultiSplitterWindow(self, style=wx.SP_LIVE_UPDATE)
+        self.splitter = splitter
+        sizer = wx.BoxSizer(wx.HORIZONTAL)
+        sizer.Add(cp)
+        sizer.Add(splitter, 1, wx.EXPAND)
+        self.SetSizer(sizer)
+
+
+        p1 = SamplePane(splitter, "pink", "Panel One")
+        p1.SetOtherLabel(
+            "There are two sash\n"
+            "drag modes. Try\n"
+            "dragging with and\n"
+            "without the Shift\n"
+            "key held down."
+            )
+        splitter.AppendWindow(p1, 140)
+
+        p2 = SamplePane(splitter, "sky blue", "Panel Two")
+        p2.SetOtherLabel("This window\nhas a\nminsize.")
+        p2.SetMinSize(p2.GetBestSize())
+        splitter.AppendWindow(p2, 150)
+
+        p3 = SamplePane(splitter, "yellow", "Panel Three")
+        splitter.AppendWindow(p3, 125)
+
+        p4 = SamplePane(splitter, "Lime Green", "Panel Four")
+        splitter.AppendWindow(p4)
+
+        self.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGED, self.OnChanged)
+        self.Bind(wx.EVT_SPLITTER_SASH_POS_CHANGING, self.OnChanging)
+
+
+    def OnChanging(self, evt):
+        self.log.write( "Changing sash:%d  %s\n" %
+                        (evt.GetSashIdx(), evt.GetSashPosition()))
+        # This is one way to control the sash limits
+        #if evt.GetSashPosition() < 50:
+        #    evt.Veto()
+
+        # Or you can reset the sash position to whatever you want
+        #if evt.GetSashPosition() < 5:
+        #    evt.SetSashPosition(25)
+
+
+    def OnChanged(self, evt):
+        self.log.write( "Changed sash:%d  %s\n" %
+                        (evt.GetSashIdx(), evt.GetSashPosition()))
+
+            
+    def SetOrientation(self, value=0):
+        if value:
+            self.splitter.SetOrientation(wx.VERTICAL)
         else:
-            # On Windows platform, default window size is incorrect, so set
-            # toolbar width to figure width.
-            tw, th = self.toolbar.GetSizeTuple()
-            fw, fh = self.canvas.GetSizeTuple()
-            # By adding toolbar in sizer, we are able to put it at the bottom
-            # of the frame - so appearance is closer to GTK version.
-            # As noted above, doesn't work for Mac.
-            self.toolbar.SetSize(wx.Size(fw, th))
-            self.sizer.Add(self.toolbar, 0, wx.LEFT | wx.EXPAND)
-        # update the axes menu on the toolbar
-        self.toolbar.update()
+            self.splitter.SetOrientation(wx.HORIZONTAL)
+        self.splitter.SizeWindows()
+
+            
+    def SetLiveUpdate(self, enable):
+        if enable:
+            self.splitter.SetWindowStyle(wx.SP_LIVE_UPDATE)
+        else:
+            self.splitter.SetWindowStyle(0)
+            
+
+    def Swap2and4(self):
+        win2 = self.splitter.GetWindow(1)
+        win4 = self.splitter.GetWindow(3)
+        self.splitter.ExchangeWindows(win2, win4)
+
+#----------------------------------------------------------------------
+
+def runTest(frame, nb, log):
+    win = TestPanel(nb, log)
+    return win
+
+#----------------------------------------------------------------------
 
 
-    def OnPaint(self, event):
-        self.canvas.draw()
 
-class App(wx.App):
+overview = """<html><body>
+<h2><center>MultiSplitterWindow</center></h2>
 
-    def OnInit(self):
-        'Create the main window and insert the custom frame'
-        frame = CanvasFrame()
-        frame.Show(True)
+This class is very similar to wx.SplitterWindow except that it
+allows for more than two windows and more than one sash.  Many of
+the same styles, constants, and methods behave the same as in
+wx.SplitterWindow.
 
-        return True
+</body></html>
+"""
 
-app = App(0)
-app.MainLoop()
+
+
+if __name__ == '__main__':
+    import sys,os
+    import run
+    run.main(['', os.path.basename(sys.argv[0])] + sys.argv[1:])
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
